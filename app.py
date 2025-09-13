@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, send_file, session
 import sqlite3
 import pandas as pd
+import os
 
 app = Flask(__name__)
 app.secret_key = "your_secret_key"  # needed for sessions & flash
@@ -8,7 +9,6 @@ app.secret_key = "your_secret_key"  # needed for sessions & flash
 # Hardcoded admin credentials (can later move to DB)
 ADMIN_USER = "admin"
 ADMIN_PASS = "password123"
-
 
 # --- Database Setup ---
 def init_db():
@@ -27,16 +27,15 @@ def init_db():
     conn.commit()
     conn.close()
 
+# Initialize DB on startup
 init_db()
 
-
+# --- Home Route ---
 @app.route("/", methods=["GET", "POST"])
 def hiii():
-
     return render_template("index.html")
 
-
-# --- Home + Form ---
+# --- Registration Form ---
 @app.route("/form", methods=["GET", "POST"])
 def index():
     if request.method == "POST":
@@ -60,7 +59,6 @@ def index():
 
     return render_template("form.html")
 
-
 # --- Login Page ---
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -78,7 +76,6 @@ def login():
 
     return render_template("login.html")
 
-
 # --- Logout ---
 @app.route("/logout")
 def logout():
@@ -86,11 +83,10 @@ def logout():
     flash("Logged out successfully!", "info")
     return redirect(url_for("login"))
 
-
-# --- Registrations Table (Protected) ---
+# --- View All Registrations (Admin Only) ---
 @app.route("/registrations")
 def registrations():
-    if "user" not in session:  # check login
+    if "user" not in session:
         flash("Please login to view registrations.", "warning")
         return redirect(url_for("login"))
 
@@ -101,8 +97,7 @@ def registrations():
     conn.close()
     return render_template("registrations.html", rows=rows)
 
-
-# --- Download Excel (Protected) ---
+# --- Download Registrations as Excel (Admin Only) ---
 @app.route("/download_excel")
 def download_excel():
     if "user" not in session:
@@ -118,6 +113,7 @@ def download_excel():
 
     return send_file(file_path, as_attachment=True)
 
-
+# --- Run Flask App ---
 if __name__ == "__main__":
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))  # Required by Render
+    app.run(debug=False, host="0.0.0.0", port=port)
